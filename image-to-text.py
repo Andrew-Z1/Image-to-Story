@@ -18,30 +18,74 @@ genai.configure(api_key=os.getenv('API_KEY'))
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 def display_welcome():
-    """Display welcome message and instructions"""
+    """Displays the welcome message and user instructions with colored formatting.
+    
+    Generates an ASCII art header and provides step-by-step instructions for the user.
+    Includes color formatting using Colorama for enhanced terminal presentation.
+    
+    Returns:
+        None: Outputs directly to console
+    """
     print(Fore.CYAN + "\n" + "="*50)
     print(Fore.YELLOW + "✨ Magical Story Generator ✨")
     print(Fore.CYAN + "="*50)
     print(Fore.GREEN + "\nWelcome to the AI Storyteller!")
     print("1. Provide an image path")
     print("2. Choose story preferences")
-    print("3. Receive a unique story!\n")  # Removed the 4th option
+    print("3. Receive a unique story!\n")
 
 def get_story_preferences():
-    """Get user preferences for story generation"""
+    """Collects user preferences for story customization.
+    
+    Prompts the user to select from available genres and optionally name a main character.
+    Validates genre input against predefined options (adventure/mystery/fairy tale).
+    
+    Returns:
+        tuple: Contains two elements
+            - genre (str): Selected story genre
+            - character (str): User-provided character name or empty string
+    
+    Raises:
+        ValueError: If genre input doesn't match available options
+    """
     print(Fore.MAGENTA + "\nStory Customization Options:")
     genre = input(Fore.WHITE + "Enter preferred genre (adventure/mystery/fairy tale): ").lower()
     character = input(Fore.WHITE + "Enter main character name (optional): ")
     return genre, character
 
 def validate_image(image_path):
-    """Validate the image file format and existence"""
+    """Validates image file existence and format compatibility.
+    
+    Args:
+        image_path (str): Path to the image file
+        
+    Raises:
+        FileNotFoundError: If no file exists at the specified path
+        ValueError: If file format is not JPEG, PNG, or WebP
+        IOError: If file cannot be opened as an image
+        
+    Returns:
+        None: Validation occurs through exception raising
+    """
     if not os.path.exists(image_path):
-        raise FileNotFoundError
-    if Image.open(image_path).format.lower() not in ['jpeg', 'png', 'webp']:
-        raise ValueError("Unsupported image format")
+        raise FileNotFoundError(f"No file found at {image_path}")
+    try:
+        img = Image.open(image_path)
+        if img.format.lower() not in ['jpeg', 'png', 'webp']:
+            raise ValueError(f"Unsupported image format: {img.format}")
+    except IOError:
+        raise IOError("File cannot be opened as an image")
 
 def image_to_story():
+    """Main workflow for generating stories from images using AI.
+    
+    Handles exceptions for common error scenarios and provides user feedback.
+    Includes loading animation during API request for better user experience.
+    
+    Raises:
+        ValueError: If API returns empty response
+        RuntimeError: For general API communication failures
+    """
     try:
         display_welcome()
         
@@ -78,10 +122,14 @@ def image_to_story():
         print(Fore.WHITE + response.text)
         print(Fore.CYAN + "="*50)
             
-    except FileNotFoundError:
-        print(Fore.RED + f"\nError: File not found at {image_path}")
+    except FileNotFoundError as fnfe:
+        print(Fore.RED + f"\nFile Error: {str(fnfe)}")
+    except ValueError as ve:
+        print(Fore.RED + f"\nValidation Error: {str(ve)}")
+    except genai.Error as ge:
+        print(Fore.RED + f"\nAPI Error: {str(ge)}")
     except Exception as e:
-        print(Fore.RED + f"\n⚠️ Error: {str(e)}")
+        print(Fore.RED + f"\nUnexpected Error: {str(e)}")
     finally:
         print(Fore.MAGENTA + "\nThank you for using the Magical Story Generator! 🎉\n")
 
